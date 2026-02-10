@@ -1,0 +1,11 @@
+# Dependências do Node
+node_modules/
+npm-debug.log*
+
+# Arquivos de sistema e do VS Code
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Arquivos Utilitários locais
+proxy.pac
