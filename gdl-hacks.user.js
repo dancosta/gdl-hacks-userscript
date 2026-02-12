@@ -1,11 +1,13 @@
 // ==UserScript==
 // @name         GDL Hacks
 // @namespace    http://tampermonkey.net/
-// @version      0.1
+// @version      1.0.0
 // @description  Otimização para o sistema GDL: Separa número/ano e preenche automaticamente.
-// @author       Dan Costa
+// @author       Perito Danilo Costa
 // @match        *://www.gdl.sesp.parana/*
 // @grant        none
+// @updateURL    https://raw.githubusercontent.com/dancosta/gdl-hacks-userscript/main/gdl-hacks.user.js
+// @downloadURL  https://raw.githubusercontent.com/dancosta/gdl-hacks-userscript/main/gdl-hacks.user.js
 // ==/UserScript==
 
 (function () {
