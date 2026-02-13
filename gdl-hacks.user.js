@@ -13,8 +13,39 @@
 (function () {
   "use strict";
 
+  // --- 1. UTILITY FUNCTIONS & CONFIG ---
+
+  const SETTINGS = {
+    DEBUG: true, // Toggle logs
+  };
+
+  const logger = {
+    log: (msg,...args) => {
+      SETTINGS.DEBUG && console.log(`[GDL Hacks] ${msg}`, ...args);
+    },
+    info: (msg,...args) => {
+      SETTINGS.DEBUG && console.info(`[GDL Hacks] ${msg}`, ...args);
+    },
+    warn: (msg,...args) => {
+      SETTINGS.DEBUG && console.warn(`[GDL Hacks] ${msg}`, ...args);
+    }
+  };
+
+  /**
+   * Updates field values and triggers native events so the UI reacts.
+   */
+  const updateField = (element, value) => {
+      if (!element) return;
+      element.value = value;
+      // Trigger events so ASP.NET/Browser knows the data changed
+      element.dispatchEvent(new Event('input', { bubbles: true }));
+      element.dispatchEvent(new Event('change', { bubbles: true }));
+  };
+
+  // --- 2. MODULE: SEARCH REP ---
+  
   // Element IDs identified from the GDL system source
-  const TARDGET_IDS = {
+  const TARGET_IDS_SEARCH = {
     NUMBER_INPUT_ID: "Content_Search_txtNumber",
     YEAR_SELECT_ID: "Content_Search_ddlYear",
   };
@@ -31,33 +62,24 @@
     // Remove any non-numeric charateres from number part (like dots)
     const cleanNumber = rawNumber.replace(/\D/g, "");
     const cleanYear = rawYear.trim();
+    logger.info(`Number: ${cleanNumber} | Year: ${cleanYear}`);
 
-    const numberInputField = document.getElementById(TARDGET_IDS.NUMBER_INPUT_ID);
-    const yearSelectField = document.getElementById(TARDGET_IDS.YEAR_SELECT_ID);
+    const numberInputField = document.getElementById(TARGET_IDS_SEARCH.NUMBER_INPUT_ID);
+    const yearSelectField = document.getElementById(TARGET_IDS_SEARCH.YEAR_SELECT_ID);
 
     if (numberInputField){
       updateField(numberInputField, cleanNumber);
-      console.log(`[GDL Hacks] Number set to: ${cleanNumber}`);
+      logger.info(`Number set to: ${cleanNumber}`);
     }
 
     if (yearSelectField){
       updateField(yearSelectField, cleanYear);
-      console.log(`[GDL Hacks] Year set to: ${cleanYear}`);
+      logger.info(`Year set to: ${cleanYear}`);
     }
 
-    console.log(`[GDL Hacks] Number: ${cleanNumber} | Year: ${cleanYear}`);
   };
 
-  /**
-     * Updates field values and triggers native events so the UI reacts.
-     */
-    const updateField = (element, value) => {
-        if (!element) return;
-        element.value = value;
-        // Trigger events so ASP.NET/Browser knows the data changed
-        element.dispatchEvent(new Event('input', { bubbles: true }));
-        element.dispatchEvent(new Event('change', { bubbles: true }));
-    };
+  
 
   /**
    * Initializes the GDL Hacks script by setting up the number input field and event listeners.
@@ -80,17 +102,18 @@
    *   - Calls processInputData() to handle the clipboard content
    */
   const init = () => {
-    console.log("[GDL Hacks] Initializing script...");
-    const originalNumberInput = document.getElementById(TARDGET_IDS.NUMBER_INPUT_ID);
+    logger.info("Initializing script...");
+    const originalNumberInput = document.getElementById(TARGET_IDS_SEARCH.NUMBER_INPUT_ID);
     if (!originalNumberInput) {
-      console.warn(
-        "[GDL Hacks] Number input field not found. Script will not work.",
+      logger.warn(
+        "Number input field not found. Script will not work.",
       );
       return;
     }
 
-    console.log("[GDL Hacks] Script replacing number input field...");
-    console.log("[GDL Hacks] Script initializing listeners ...");
+
+    logger.info("Script replacing number input field...");
+    logger.info("Script initializing listeners ...");
 
     // Clone the original input to remove existing event listeners and replace it in the DOM
     const clonedInput = originalNumberInput.cloneNode(true);
@@ -100,7 +123,7 @@
     // Paste event listener to handle clipboard data with format "number/year"
     clonedInput.addEventListener("paste", (event) => {
       const clipboardData = (event.clipboardData || window.clipboardData).getData("text");
-      console.log('[GDL Hacks] Paste triggered. Clipboard data:', clipboardData);
+      logger.info('Paste triggered. Clipboard data:', clipboardData);
       if (clipboardData.includes("/")) {
         event.preventDefault(); // Stop original paste to avoid mask interference
         processInputData(clipboardData);
@@ -111,9 +134,8 @@
     clonedInput.addEventListener("blur", (event) => {
       // Ensure the field is properly formatted on blur
       const value = event.target.value;
-      console.log('[GDL Hacks] Blur triggered. Value:', event.target.value);
+      logger.info('Blur triggered. Value:', event.target.value);
       if (value.includes("/")) {
-        
         processInputData(value);
       }
     });
