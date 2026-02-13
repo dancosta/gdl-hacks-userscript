@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         GDL Hacks
 // @namespace    http://tampermonkey.net/
-// @version      1.1.0-beta
+// @version      1.1.1-beta
 // @description  Hacks para o sistema GDLSepara número/ano e preenche automaticamente.
 // @author       Perito Danilo Costa
 // @match        *://www.gdl.sesp.parana/*
@@ -144,8 +144,8 @@
   // --- 3. Router---
   // Simple router to initialize hacks based on the current page path
   const route = (path) => {
-    
-    if (path.includes("/SAC/GDL_IC_NET/Default.aspx")) {
+    logger.info(`Inside router. Current path: ${path}`);
+    if (path.includes("/SAC/GDL_IC_NET/DefaultSearch/Default.aspx")) {
       initSearchPage();
     }
   };
