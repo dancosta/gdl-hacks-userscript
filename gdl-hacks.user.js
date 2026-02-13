@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         GDL Hacks
 // @namespace    http://tampermonkey.net/
-// @version      1.0.0
-// @description  Otimização para o sistema GDL: Separa número/ano e preenche automaticamente.
+// @version      1.1.0-beta
+// @description  Hacks para o sistema GDLSepara número/ano e preenche automaticamente.
 // @author       Perito Danilo Costa
 // @match        *://www.gdl.sesp.parana/*
 // @grant        none
@@ -45,17 +45,17 @@
   // --- 2. MODULE: SEARCH REP ---
   
   // Element IDs identified from the GDL system source
-  const TARGET_IDS_SEARCH = {
+  const SEARCH_IDS = {
     NUMBER_INPUT_ID: "Content_Search_txtNumber",
     YEAR_SELECT_ID: "Content_Search_ddlYear",
   };
 
 
   /**
-   * Splits a string like "12.345/2018" and populates the fields.
+   * Splits a string like "12.345/2018" and populates Number and Year fields.
    * @param {string} rawValue
    */
-  const processInputData = (rawValue) => {
+  const processSearchInputData = (rawValue) => {
     if (!rawValue.includes("/")) return;
 
     const [rawNumber, rawYear] = rawValue.split("/");
@@ -64,8 +64,8 @@
     const cleanYear = rawYear.trim();
     logger.info(`Number: ${cleanNumber} | Year: ${cleanYear}`);
 
-    const numberInputField = document.getElementById(TARGET_IDS_SEARCH.NUMBER_INPUT_ID);
-    const yearSelectField = document.getElementById(TARGET_IDS_SEARCH.YEAR_SELECT_ID);
+    const numberInputField = document.getElementById(SEARCH_IDS.NUMBER_INPUT_ID);
+    const yearSelectField = document.getElementById(SEARCH_IDS.YEAR_SELECT_ID);
 
     if (numberInputField){
       updateField(numberInputField, cleanNumber);
@@ -101,9 +101,9 @@
    *   - Prevents default paste behavior if "/" is found
    *   - Calls processInputData() to handle the clipboard content
    */
-  const init = () => {
-    logger.info("Initializing script...");
-    const originalNumberInput = document.getElementById(TARGET_IDS_SEARCH.NUMBER_INPUT_ID);
+  const initSearchPage = () => {
+    logger.info("Initializing Search Page Hack...");
+    const originalNumberInput = document.getElementById(SEARCH_IDS.NUMBER_INPUT_ID);
     if (!originalNumberInput) {
       logger.warn(
         "Number input field not found. Script will not work.",
@@ -126,7 +126,7 @@
       logger.info('Paste triggered. Clipboard data:', clipboardData);
       if (clipboardData.includes("/")) {
         event.preventDefault(); // Stop original paste to avoid mask interference
-        processInputData(clipboardData);
+        processSearchInputData(clipboardData);
       }
     });
 
@@ -136,10 +136,22 @@
       const value = event.target.value;
       logger.info('Blur triggered. Value:', event.target.value);
       if (value.includes("/")) {
-        processInputData(value);
+        processSearchInputData(value);
       }
     });
   };
 
-  init();
+  // --- 3. Router---
+  // Simple router to initialize hacks based on the current page path
+  const route = (path) => {
+    
+    if (path.includes("/SAC/GDL_IC_NET/Default.aspx")) {
+      initSearchPage();
+    }
+  };
+
+  // --- 4. INIT ---
+  const currentPath = window.location.pathname;
+  logger.info(`Current path: ${currentPath}`);
+  route(currentPath);
 })();
