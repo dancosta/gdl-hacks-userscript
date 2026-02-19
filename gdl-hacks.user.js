@@ -82,12 +82,12 @@
   
 
   /**
-   * Initializes the GDL Hacks script by setting up the number input field and event listeners.
+   * Initializes the search page GDL Hacks script by setting up the number input field and event listeners.
    * 
    * Clones the target number input element to remove existing event listeners,
    * and adds a custom paste event listener that processes input data containing forward slashes.
    * 
-   * @function init
+   * @function initSearchPage
    * @returns {void}
    * @throws {void} Logs a warning and returns early if the target number input element is not found.
    * 
