@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         GDL Hacks
 // @namespace    http://tampermonkey.net/
-// @version      1.2.0 - Stable
+// @version      1.3.0
 // @description  Hacks para auxiliar no uso do sistema GDL.
 // @author       Perito Danilo Costa
 // @match        *://www.gdl.sesp.parana/*
@@ -13,7 +13,7 @@
 (function () {
   "use strict";
 
-  // --- 1. UTILITY FUNCTIONS & CONFIG ---
+  // --- UTILITY FUNCTIONS & CONFIG ---
 
   const SETTINGS = {
     DEBUG: true, // Toggle logs
@@ -42,7 +42,61 @@
       element.dispatchEvent(new Event('change', { bubbles: true }));
   };
 
-  // --- 2. MODULE: SEARCH REP ---
+  
+
+  // --- CORE MODULE: SMART REP INPUT ---
+
+  /**
+   * Splits a string like "12.345/2018" and populates specific Number and Year fields.
+   */
+  const processRepInput = (rawValue, numberInputId, yearSelectId) => {
+    if (!rawValue.includes("/")) return;
+
+    const [rawNumber, rawYear] = rawValue.split("/");
+    const cleanNumber = rawNumber.replace(/\D/g, "");
+    const cleanYear = rawYear.trim();
+
+    const numberInputField = document.getElementById(numberInputId);
+    const yearSelectField = document.getElementById(yearSelectId);
+
+    if (numberInputField) updateField(numberInputField, cleanNumber);
+    if (yearSelectField) updateField(yearSelectField, cleanYear);
+
+    logger.info(`Smart Input Applied [${numberInputId}]: Num: ${cleanNumber} | Year: ${cleanYear}`);
+  };
+
+  /**
+   * Attaches the smart "number/year" splitting logic to any given input field.
+   */
+  const setupSmartRepInput = (numberInputId, yearSelectId) => {
+    const originalNumberInput = document.getElementById(numberInputId);
+    if (!originalNumberInput) {
+      logger.warn(`Input field '${numberInputId}' not found. Smart input disabled for this field.`);
+      return;
+    }
+
+    // Clone the original input to remove existing event listeners and replace it in the DOM
+    const clonedInput = originalNumberInput.cloneNode(true);
+    originalNumberInput.parentNode.replaceChild(clonedInput, originalNumberInput);
+
+    // Paste event listener
+    clonedInput.addEventListener("paste", (event) => {
+      const clipboardData = (event.clipboardData || window.clipboardData).getData("text");
+      if (clipboardData.includes("/")) {
+        event.preventDefault(); // Stop original paste to avoid mask interference
+        processRepInput(clipboardData, numberInputId, yearSelectId);
+      }
+    });
+
+    // Blur event listener (TAB)
+    clonedInput.addEventListener("blur", (event) => {
+      const value = event.target.value;
+      if (value.includes("/")) {
+        processRepInput(value, numberInputId, yearSelectId);
+      }
+    });
+  };
+  // --- MODULE: SEARCH REP ---
   
   // Element IDs identified from the GDL system source
   const SEARCH_IDS = {
@@ -51,33 +105,6 @@
   };
 
 
-  /**
-   * Splits a string like "12.345/2018" and populates Number and Year fields.
-   * @param {string} rawValue
-   */
-  const processSearchInputData = (rawValue) => {
-    if (!rawValue.includes("/")) return;
-
-    const [rawNumber, rawYear] = rawValue.split("/");
-    // Remove any non-numeric charateres from number part (like dots)
-    const cleanNumber = rawNumber.replace(/\D/g, "");
-    const cleanYear = rawYear.trim();
-    logger.info(`Number: ${cleanNumber} | Year: ${cleanYear}`);
-
-    const numberInputField = document.getElementById(SEARCH_IDS.NUMBER_INPUT_ID);
-    const yearSelectField = document.getElementById(SEARCH_IDS.YEAR_SELECT_ID);
-
-    if (numberInputField){
-      updateField(numberInputField, cleanNumber);
-      logger.info(`Number set to: ${cleanNumber}`);
-    }
-
-    if (yearSelectField){
-      updateField(yearSelectField, cleanYear);
-      logger.info(`Year set to: ${cleanYear}`);
-    }
-
-  };
 
   
 
@@ -103,45 +130,10 @@
    */
   const initSearchPage = () => {
     logger.info("Initializing Search Page Hack...");
-    const originalNumberInput = document.getElementById(SEARCH_IDS.NUMBER_INPUT_ID);
-    if (!originalNumberInput) {
-      logger.warn(
-        "Number input field not found. Script will not work.",
-      );
-      return;
-    }
-
-
-    logger.info("Script replacing number input field...");
-    logger.info("Script initializing listeners ...");
-
-    // Clone the original input to remove existing event listeners and replace it in the DOM
-    const clonedInput = originalNumberInput.cloneNode(true);
-    // Replace the original input with the cloned version
-    originalNumberInput.parentNode.replaceChild(clonedInput, originalNumberInput);
-
-    // Paste event listener to handle clipboard data with format "number/year"
-    clonedInput.addEventListener("paste", (event) => {
-      const clipboardData = (event.clipboardData || window.clipboardData).getData("text");
-      logger.info('Paste triggered. Clipboard data:', clipboardData);
-      if (clipboardData.includes("/")) {
-        event.preventDefault(); // Stop original paste to avoid mask interference
-        processSearchInputData(clipboardData);
-      }
-    });
-
-    // Blur event listener to ensure proper formatting when the user finishes editing
-    clonedInput.addEventListener("blur", (event) => {
-      // Ensure the field is properly formatted on blur
-      const value = event.target.value;
-      logger.info('Blur triggered. Value:', event.target.value);
-      if (value.includes("/")) {
-        processSearchInputData(value);
-      }
-    });
+    setupSmartRepInput(SEARCH_IDS.NUMBER_INPUT_ID, SEARCH_IDS.YEAR_SELECT_ID);
   };
 
-  // --- 3. MODULE: REP EDITION ---
+  // --- MODULE: REP EDITION ---
   const REP_IDS = {
     REP_TYPE_SELECT_ID: "Content_RepMain_ddlNatureExam",
     LOCAL_EXAMINATION_SELECT_ID: "Content_RepMain_ddlOrganExam",
@@ -218,10 +210,30 @@
       }
     });
   };
-  // --- 4. Router---
+
+  // --- MODULE: MIGRATION PAGE ---
+
+  const MIGRATION_IDS = {
+    ORIGIN_REP_NUMBER_ID: "Content_txtNumeroRepOrigem", 
+    ORIGIN_YEAR_ID: "Content_ddlAnoRepOrigem",
+    DESTINATON_REP_NUMBER_ID: "Content_txtNumeroRepDestino",
+    DESTINATION_YEAR_ID: "Content_ddlAnoRepDestino",
+  };
+
+  const initMigratePage = () => {
+    logger.info("Initializing Migration Page Hack...");
+    
+    setupSmartRepInput(MIGRATION_IDS.ORIGIN_REP_NUMBER_ID, MIGRATION_IDS.ORIGIN_YEAR_ID);
+    setupSmartRepInput(MIGRATION_IDS.DESTINATON_REP_NUMBER_ID, MIGRATION_IDS.DESTINATION_YEAR_ID);  
+  };
+
+
+
+  // ---  MODULE Router---
   const PATHS = {
     SEARCH_PAGE: "/SAC/GDL_IC_NET/DefaultSearch/Default.aspx",
     REP_PAGE: "/SAC/GDL_IC_NET/REP/Default.aspx",
+    MIGRATE_PAGE: "/SAC/GDL_IC_NET/Rep/MigrarREP.aspx",
   };
   // Simple router to initialize hacks based on the current page path
   const route = (path) => {
@@ -230,10 +242,13 @@
       initSearchPage();
     } else if (path.includes(PATHS.REP_PAGE)) {
       initREPPage();
-    }
+    } else if (path.includes(PATHS.MIGRATE_PAGE)) {
+        initMigratePage();
+      }
   };  
 
-  // --- 5. INIT ---
+
+  // ---  INIT ---
   const currentPath = window.location.pathname;
   logger.info(`Current path: ${currentPath}`);
   route(currentPath);
